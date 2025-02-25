@@ -14,6 +14,8 @@
 
 #include <zlib.h>
 
+void crash(std::string msg) { std::cerr<<msg<<std::endl; exit(1); }
+void crash(std::string msg, std::string msg2) { std::cerr<<msg<<msg2<<std::endl; exit(1); }
 
 template<class T>
 class BlockingQueue
@@ -76,7 +78,7 @@ public:
   {
     file = gzopen(path.c_str(), "rb");
     if (!file)
-      throw std::runtime_error("Could not open gzip file: " + path);
+      crash("Could not open gzip file: ", path);
   }
 
   ~GzipReader()
@@ -169,10 +171,10 @@ public:
   {
     r1_out = gzopen(r1_path.c_str(), "wb");
     if (!r1_out)
-      throw std::runtime_error("Could not open gzip file for writing: " + r1_path);
+      crash("Could not open gzip file for writing: ", r1_path);
     r2_out = gzopen(r2_path.c_str(), "wb");
     if (!r2_out)
-      throw std::runtime_error("Could not open gzip file for writing: " + r2_path);
+      crash("Could not open gzip file for writing: ", r2_path);
   }
   ~SubsampleWriter()
   {
@@ -327,13 +329,11 @@ void randomSampleIndices(std::vector<uint32_t>& samples, uint32_t k, uint32_t n)
             <<" last read index is "<<samples.back()<<std::endl;
 }
 
-void crash(std::string msg) { std::cerr<<msg<<std::endl; exit(1); }
-
 void allDigitsOrDie(std::string s)
 {
   for (char c : s)
     if (c < '0' || c > '9')
-      crash(std::string("Not a number: ") + s);
+      crash("Not a number: ", s);
 }
 
 // parse CSV to determine outputs, and pick the random indices
@@ -342,7 +342,7 @@ std::vector<std::unique_ptr<SubsampleWriter>> configureWriters(std::string confi
 {
   std::ifstream config_file(config_path);
   if (!config_file)
-    crash(std::string("Failed to open config file: ")+config_path);
+    crash("Failed to open config file: ", config_path);
   std::string line;
   std::vector<std::string> base_outpaths;
   std::vector<uint32_t> num_subsamples;
@@ -362,7 +362,7 @@ std::vector<std::unique_ptr<SubsampleWriter>> configureWriters(std::string confi
       num_subsamples.push_back(std::stoi(num_subsamples_str));
     }
     else
-      crash(std::string("failed to parse csv line:\n")+line);
+      crash("failed to parse csv line:\n", line);
   }
   std::vector<std::unique_ptr<SubsampleWriter>> outputters(base_outpaths.size());
   for (int i=0; i<base_outpaths.size(); i++)
@@ -412,6 +412,6 @@ int main(int argc, char* argv[])
     input_thread1.join();
     input_thread2.join();
   }
-  catch (const std::exception& e) { crash(std::string("Error: ")+e.what()); }
+  catch (const std::exception& e) { crash("Error: ",  e.what()); }
   return 0;
 }
